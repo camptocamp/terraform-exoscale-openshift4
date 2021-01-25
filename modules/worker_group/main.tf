@@ -13,6 +13,12 @@ resource "exoscale_instance_pool" "this" {
   user_data          = var.user_data
   affinity_group_ids = [exoscale_affinity.this.id]
   security_group_ids = var.security_group_ids
+
+  lifecycle {
+    ignore_changes = [
+      user_data,
+    ]
+  }
 }
 
 resource "null_resource" "approve_node_bootstrapper_csr" {
