@@ -150,12 +150,6 @@ resource "exoscale_instance_pool" "master" {
     exoscale_security_group.master.id,
   ]
 
-  lifecycle {
-    ignore_changes = [
-      user_data,
-    ]
-  }
-
   depends_on = [
     module.bootstrap_node,
   ]

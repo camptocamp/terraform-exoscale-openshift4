@@ -120,12 +120,6 @@ resource "exoscale_compute" "bootstrap" {
   security_group_ids = [
     exoscale_security_group.bootstrap.id,
   ]
-
-  lifecycle {
-    ignore_changes = [
-      user_data,
-    ]
-  }
 }
 
 resource "null_resource" "wait_for_cluster" {
