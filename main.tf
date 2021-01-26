@@ -269,7 +269,7 @@ module "worker_group" {
   size             = each.value.size
   service_offering = each.value.service_offering
   user_data        = data.aws_s3_bucket_object.worker_ign.body
-  kubeconfig       = local_file.kubeconfig.filename
+  kubeconfig       = data.aws_s3_bucket_object.kubeconfig.body
 
   security_group_ids = [
     exoscale_security_group.worker.id,
