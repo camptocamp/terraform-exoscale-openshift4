@@ -18,7 +18,7 @@ variable "zone" {
   type        = string
 }
 
-variable "artifacts_bucket" {
+variable "assets_bucket" {
   type = string
 }
 

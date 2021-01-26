@@ -17,7 +17,7 @@ provider "aws" {
   skip_region_validation      = true
 }
 
-resource "aws_s3_bucket" "artifacts" {
+resource "aws_s3_bucket" "assets" {
   bucket        = format("%s.%s", var.cluster_name, var.base_domain)
   force_destroy = true
 
@@ -40,14 +40,14 @@ module "bootstrap_node" {
   pull_secret = var.pull_secret
   ssh_key     = var.ssh_key
 
-  artifacts_bucket = aws_s3_bucket.artifacts.bucket
+  assets_bucket = aws_s3_bucket.assets.bucket
 
   wait_for_cluster_cmd = var.wait_for_cluster_cmd
   wait_for_interpreter = var.wait_for_interpreter
 }
 
 data "aws_s3_bucket_object" "master_ign" {
-  bucket = aws_s3_bucket.artifacts.id
+  bucket = aws_s3_bucket.assets.id
   key    = "master.ign"
 
   depends_on = [
@@ -56,7 +56,7 @@ data "aws_s3_bucket_object" "master_ign" {
 }
 
 data "aws_s3_bucket_object" "kubeconfig" {
-  bucket = aws_s3_bucket.artifacts.id
+  bucket = aws_s3_bucket.assets.id
   key    = "auth/kubeconfig"
 
   depends_on = [
@@ -65,7 +65,7 @@ data "aws_s3_bucket_object" "kubeconfig" {
 }
 
 data "aws_s3_bucket_object" "kubeadmin_password" {
-  bucket = aws_s3_bucket.artifacts.id
+  bucket = aws_s3_bucket.assets.id
   key    = "auth/kubeadmin-password"
 
   depends_on = [
@@ -123,7 +123,7 @@ resource "null_resource" "wait_for_bootstrap_complete" {
     command     = var.wait_for_bootstrap_complete_cmd
     interpreter = var.wait_for_interpreter
     environment = {
-      ARTIFACTS_DIR = path.module
+      ASSETS_DIR = path.module
     }
   }
 }
@@ -249,7 +249,7 @@ resource "exoscale_security_group_rules" "worker" {
 }
 
 data "aws_s3_bucket_object" "worker_ign" {
-  bucket = aws_s3_bucket.artifacts.id
+  bucket = aws_s3_bucket.assets.id
   key    = "worker.ign"
 
   depends_on = [
@@ -290,7 +290,7 @@ resource "null_resource" "wait_for_install_complete" {
     command     = var.wait_for_install_complete_cmd
     interpreter = var.wait_for_interpreter
     environment = {
-      ARTIFACTS_DIR = path.module
+      ASSETS_DIR = path.module
     }
   }
 }

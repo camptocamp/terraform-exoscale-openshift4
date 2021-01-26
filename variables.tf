@@ -37,15 +37,15 @@ variable "wait_for_cluster_cmd" {
 }
 
 variable "wait_for_bootstrap_complete_cmd" {
-  description = "Custom local-exec command to execute for determining if the bootstrap of the openshift cluster is complete. Artifacts dir will be available as an environment variable called ARTIFACTS_DIR"
+  description = "Custom local-exec command to execute for determining if the bootstrap of the openshift cluster is complete. Assets dir will be available as an environment variable called ASSETS_DIR"
   type        = string
-  default     = "openshift-install --dir=$ARTIFACTS_DIR wait-for bootstrap-complete"
+  default     = "openshift-install --dir=$ASSETS_DIR wait-for bootstrap-complete"
 }
 
 variable "wait_for_install_complete_cmd" {
-  description = "Custom local-exec command to execute for determining if the installation of the openshift cluster is complete. Artifacts dir will be available as an environment variable called ARTIFACTS_DIR"
+  description = "Custom local-exec command to execute for determining if the installation of the openshift cluster is complete. Assets dir will be available as an environment variable called ASSETS_DIR"
   type        = string
-  default     = "openshift-install --dir=$ARTIFACTS_DIR wait-for install-complete"
+  default     = "openshift-install --dir=$ASSETS_DIR wait-for install-complete"
 }
 
 variable "wait_for_interpreter" {

@@ -1,19 +1,19 @@
 locals {
-  artifacts_dir = "${path.module}/${var.cluster_name}"
+  assets_dir = "${path.module}/${var.cluster_name}"
 }
 
 data "exoscale_domain" "this" {
   name = var.base_domain
 }
 
-resource "null_resource" "get_artifacts" {
+resource "null_resource" "get_assets" {
   provisioner "local-exec" {
-    command = format("aws s3 --endpoint https://sos-%s.exo.io --region %s sync s3://%s %s", var.zone, var.zone, var.artifacts_bucket, local.artifacts_dir)
+    command = format("aws s3 --endpoint https://sos-%s.exo.io --region %s sync s3://%s %s", var.zone, var.zone, var.assets_bucket, local.assets_dir)
   }
 }
 
 resource "local_file" "install_config_yaml" {
-  filename = "${local.artifacts_dir}/install-config.yaml"
+  filename = "${local.assets_dir}/install-config.yaml"
   content = templatefile("${path.module}/install-config.tmpl.yaml",
     {
       base_domain  = var.base_domain
@@ -24,30 +24,30 @@ resource "local_file" "install_config_yaml" {
   )
 
   provisioner "local-exec" {
-    command = "openshift-install create manifests --dir=${local.artifacts_dir}"
+    command = "openshift-install create manifests --dir=${local.assets_dir}"
   }
 
   provisioner "local-exec" {
-    command = "sed -i -E 's/mastersSchedulable(.) true/mastersSchedulable\\1 false/' ${local.artifacts_dir}/manifests/cluster-scheduler-02-config.yml"
+    command = "sed -i -E 's/mastersSchedulable(.) true/mastersSchedulable\\1 false/' ${local.assets_dir}/manifests/cluster-scheduler-02-config.yml"
   }
 
   provisioner "local-exec" {
-    command = "openshift-install create ignition-configs --dir=${local.artifacts_dir}"
+    command = "openshift-install create ignition-configs --dir=${local.assets_dir}"
   }
 
   provisioner "local-exec" {
-    command = format("aws s3 --endpoint https://sos-%s.exo.io --region %s sync %s s3://%s --content-type text/plain", var.zone, var.zone, local.artifacts_dir, var.artifacts_bucket)
+    command = format("aws s3 --endpoint https://sos-%s.exo.io --region %s sync %s s3://%s --content-type text/plain", var.zone, var.zone, local.assets_dir, var.assets_bucket)
   }
 
   depends_on = [
-    null_resource.get_artifacts,
+    null_resource.get_assets,
   ]
 }
 
 data "null_data_source" "ugly_hack" {
   inputs = {
-    artifacts_dir = dirname(local_file.install_config_yaml.filename)
-    content       = local_file.install_config_yaml.content
+    assets_dir = dirname(local_file.install_config_yaml.filename)
+    content    = local_file.install_config_yaml.content
   }
 
   depends_on = [
@@ -55,11 +55,11 @@ data "null_data_source" "ugly_hack" {
   ]
 }
 
-data "null_data_source" "artifacts" {
+data "null_data_source" "assets" {
   inputs = {
-    bootstrap_ign = file("${data.null_data_source.ugly_hack.outputs.artifacts_dir}/bootstrap.ign")
-    master_ign    = file("${data.null_data_source.ugly_hack.outputs.artifacts_dir}/master.ign")
-    worker_ign    = file("${data.null_data_source.ugly_hack.outputs.artifacts_dir}/worker.ign")
+    bootstrap_ign = file("${data.null_data_source.ugly_hack.outputs.assets_dir}/bootstrap.ign")
+    master_ign    = file("${data.null_data_source.ugly_hack.outputs.assets_dir}/master.ign")
+    worker_ign    = file("${data.null_data_source.ugly_hack.outputs.assets_dir}/worker.ign")
   }
 
   depends_on = [
@@ -98,7 +98,7 @@ data "external" "presign" {
 
   query = {
     endpoint = "https://sos-${var.zone}.exo.io"
-    s3uri    = format("s3://%s/bootstrap.ign", var.artifacts_bucket)
+    s3uri    = format("s3://%s/bootstrap.ign", var.assets_bucket)
   }
 }
 
