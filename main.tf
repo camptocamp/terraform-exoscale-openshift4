@@ -179,13 +179,6 @@ resource "exoscale_nlb_service" "master_api" {
   }
 }
 
-# FIXME This is an ugly add a delay between the destruction of the 2 NLB services
-# because it looks like it has some issues
-resource "time_sleep" "wait_5_seconds_master_nlb" {
-  depends_on       = [exoscale_nlb_service.master_api]
-  destroy_duration = "5s"
-}
-
 resource "exoscale_nlb_service" "master_machine_config_server" {
   nlb_id           = exoscale_nlb.master.id
   zone             = var.zone
@@ -203,8 +196,6 @@ resource "exoscale_nlb_service" "master_machine_config_server" {
     timeout  = 3
     retries  = 1
   }
-
-  depends_on = [time_sleep.wait_5_seconds_master_nlb]
 }
 
 resource "exoscale_domain_record" "api" {
@@ -328,13 +319,6 @@ resource "exoscale_nlb_service" "router_http" {
   }
 }
 
-# FIXME This is an ugly add a delay between the destruction of the 2 NLB services
-# because it looks like it has some issues
-resource "time_sleep" "wait_5_seconds_router_nlb" {
-  depends_on       = [exoscale_nlb_service.router_http]
-  destroy_duration = "5s"
-}
-
 resource "exoscale_nlb_service" "router_https" {
   nlb_id           = exoscale_nlb.router.id
   zone             = var.zone
@@ -352,8 +336,6 @@ resource "exoscale_nlb_service" "router_https" {
     timeout  = 3
     retries  = 1
   }
-
-  depends_on = [time_sleep.wait_5_seconds_router_nlb]
 }
 
 resource "exoscale_domain_record" "apps" {
