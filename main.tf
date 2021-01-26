@@ -42,6 +42,7 @@ module "bootstrap_node" {
 
   assets_bucket = aws_s3_bucket.assets.bucket
 
+  sync_assets_bucket   = var.sync_assets_bucket
   wait_for_cluster_cmd = var.wait_for_cluster_cmd
   wait_for_interpreter = var.wait_for_interpreter
 }
@@ -109,13 +110,21 @@ resource "null_resource" "wait_for_bootstrap_complete" {
   ]
 
   provisioner "local-exec" {
-    command     = var.wait_for_bootstrap_complete_cmd
+    command     = var.sync_assets_bucket
     interpreter = var.wait_for_interpreter
     environment = {
       ASSETS_BUCKET = aws_s3_bucket.assets.bucket
       ASSETS_DIR    = path.module
       S3_ENDPOINT   = format("https://sos-%s.exo.io", var.zone)
       AWS_REGION    = var.zone
+    }
+  }
+
+  provisioner "local-exec" {
+    command     = var.wait_for_bootstrap_complete_cmd
+    interpreter = var.wait_for_interpreter
+    environment = {
+      ASSETS_DIR = path.module
     }
   }
 }
@@ -278,13 +287,21 @@ resource "null_resource" "wait_for_install_complete" {
   ]
 
   provisioner "local-exec" {
-    command     = var.wait_for_install_complete_cmd
+    command     = var.sync_assets_bucket
     interpreter = var.wait_for_interpreter
     environment = {
       ASSETS_BUCKET = aws_s3_bucket.assets.bucket
       ASSETS_DIR    = path.module
       S3_ENDPOINT   = format("https://sos-%s.exo.io", var.zone)
       AWS_REGION    = var.zone
+    }
+  }
+
+  provisioner "local-exec" {
+    command     = var.wait_for_install_complete_cmd
+    interpreter = var.wait_for_interpreter
+    environment = {
+      ASSETS_DIR = path.module
     }
   }
 }

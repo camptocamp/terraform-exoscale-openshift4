@@ -8,10 +8,6 @@ terraform {
       source  = "community-terraform-providers/ignition"
       version = "~> 2.1"
     }
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.0"
-    }
     external = {
       source  = "hashicorp/external"
       version = "~> 2.0"

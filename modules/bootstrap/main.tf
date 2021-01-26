@@ -1,20 +1,7 @@
 locals {
   assets_dir = "${path.module}/${var.cluster_name}"
-}
 
-data "exoscale_domain" "this" {
-  name = var.base_domain
-}
-
-resource "null_resource" "get_assets" {
-  provisioner "local-exec" {
-    command = format("aws s3 --endpoint https://sos-%s.exo.io --region %s sync s3://%s %s", var.zone, var.zone, var.assets_bucket, local.assets_dir)
-  }
-}
-
-resource "local_file" "install_config_yaml" {
-  filename = "${local.assets_dir}/install-config.yaml"
-  content = templatefile("${path.module}/install-config.tmpl.yaml",
+  install_config_yaml = templatefile("${path.module}/install-config.tmpl.yaml",
     {
       base_domain  = var.base_domain
       cluster_name = var.cluster_name
@@ -22,6 +9,30 @@ resource "local_file" "install_config_yaml" {
       ssh_key      = var.ssh_key
     }
   )
+}
+
+data "exoscale_domain" "this" {
+  name = var.base_domain
+}
+
+resource "aws_s3_bucket_object" "install_config" {
+  bucket  = var.assets_bucket
+  key     = "install-config.yaml"
+  content = local.install_config_yaml
+  etag    = md5(local.install_config_yaml)
+}
+
+resource "null_resource" "generate_assets" {
+  provisioner "local-exec" {
+    command     = var.sync_assets_bucket
+    interpreter = var.wait_for_interpreter
+    environment = {
+      ASSETS_BUCKET = var.assets_bucket
+      ASSETS_DIR    = local.assets_dir
+      S3_ENDPOINT   = format("https://sos-%s.exo.io", var.zone)
+      AWS_REGION    = var.zone
+    }
+  }
 
   provisioner "local-exec" {
     command = "openshift-install create manifests --dir=${local.assets_dir}"
@@ -36,35 +47,12 @@ resource "local_file" "install_config_yaml" {
   }
 
   provisioner "local-exec" {
-    command = format("aws s3 --endpoint https://sos-%s.exo.io --region %s sync %s s3://%s --content-type text/plain", var.zone, var.zone, local.assets_dir, var.assets_bucket)
+    command = format("aws s3 --endpoint https://sos-%s.exo.io sync %s s3://%s --content-type text/plain", var.zone, local.assets_dir, var.assets_bucket)
+
+    environment = {
+      AWS_REGION = var.zone
+    }
   }
-
-  depends_on = [
-    null_resource.get_assets,
-  ]
-}
-
-data "null_data_source" "ugly_hack" {
-  inputs = {
-    assets_dir = dirname(local_file.install_config_yaml.filename)
-    content    = local_file.install_config_yaml.content
-  }
-
-  depends_on = [
-    local_file.install_config_yaml,
-  ]
-}
-
-data "null_data_source" "assets" {
-  inputs = {
-    bootstrap_ign = file("${data.null_data_source.ugly_hack.outputs.assets_dir}/bootstrap.ign")
-    master_ign    = file("${data.null_data_source.ugly_hack.outputs.assets_dir}/master.ign")
-    worker_ign    = file("${data.null_data_source.ugly_hack.outputs.assets_dir}/worker.ign")
-  }
-
-  depends_on = [
-    local_file.install_config_yaml,
-  ]
 }
 
 resource "exoscale_security_group" "bootstrap" {
@@ -100,6 +88,10 @@ data "external" "presign" {
     endpoint = "https://sos-${var.zone}.exo.io"
     s3uri    = format("s3://%s/bootstrap.ign", var.assets_bucket)
   }
+
+  depends_on = [
+    null_resource.generate_assets,
+  ]
 }
 
 data "ignition_config" "bootstrap" {
