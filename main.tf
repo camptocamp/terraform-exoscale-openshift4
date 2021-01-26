@@ -103,27 +103,19 @@ resource "exoscale_security_group_rules" "master" {
   }
 }
 
-resource "local_file" "kubeconfig" {
-  filename = "${path.module}/auth/kubeconfig"
-  content  = data.aws_s3_bucket_object.kubeconfig.body
-}
-
-resource "local_file" "kubeadmin_password" {
-  filename = "${path.module}/auth/kubeadmin-password"
-  content  = data.aws_s3_bucket_object.kubeadmin_password.body
-}
-
 resource "null_resource" "wait_for_bootstrap_complete" {
   depends_on = [
     module.bootstrap_node,
-    local_file.kubeconfig,
   ]
 
   provisioner "local-exec" {
     command     = var.wait_for_bootstrap_complete_cmd
     interpreter = var.wait_for_interpreter
     environment = {
-      ASSETS_DIR = path.module
+      ASSETS_BUCKET = aws_s3_bucket.assets.bucket
+      ASSETS_DIR    = path.module
+      S3_ENDPOINT   = format("https://sos-%s.exo.io", var.zone)
+      AWS_REGION    = var.zone
     }
   }
 }
@@ -283,14 +275,16 @@ module "worker_group" {
 resource "null_resource" "wait_for_install_complete" {
   depends_on = [
     module.worker_group,
-    local_file.kubeconfig,
   ]
 
   provisioner "local-exec" {
     command     = var.wait_for_install_complete_cmd
     interpreter = var.wait_for_interpreter
     environment = {
-      ASSETS_DIR = path.module
+      ASSETS_BUCKET = aws_s3_bucket.assets.bucket
+      ASSETS_DIR    = path.module
+      S3_ENDPOINT   = format("https://sos-%s.exo.io", var.zone)
+      AWS_REGION    = var.zone
     }
   }
 }
